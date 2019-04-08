@@ -81,8 +81,8 @@ def callback():
     return redirect(res_url)
 
 
-@app.route('/create_blend/<limit>/<time_range>', methods=['POST', 'GET'])
-def create_blend(limit, time_range):
+@app.route('/create_blend/<limit>/<time_range>/<playlist_size>', methods=['POST', 'GET'])
+def create_blend(limit, time_range, playlist_size):
     blend_seed = {'tracks': {}, 'artists': {}, 'genres': {}}
     if request.method == 'POST':
         for user in request.form:
@@ -102,9 +102,8 @@ def create_blend(limit, time_range):
                         blend_seed['artists'][artist['id']] = weight
                 weight *= REGRESSION
         seed_artists = get_seed_artists(blend_seed['artists'])
-        print(seed_artists)
         target_args = get_target_args(blend_seed['tracks'], 20, sp)
-        recommendations = sp.recommendations(seed_artists=seed_artists, limit=100,
+        recommendations = sp.recommendations(seed_artists=seed_artists, limit=playlist_size,
         **target_args)
         print(recommendations)
     return 'success'
