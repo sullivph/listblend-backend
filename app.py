@@ -1,14 +1,14 @@
 import json
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, jsonify
 import requests
 import base64
 import urllib.parse
 from six import text_type
 import spotipy
 import numpy as np
+import ast
 
 app = Flask(__name__)
-
 # Client Keys
 CLIENT_ID = '1f6397c5617841b9a104f750bd309a37'
 CLIENT_SECRET = '442fd02c347a41e19477ce4908712f2f'
@@ -25,7 +25,7 @@ SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 CLIENT_SIDE_URL = 'http://localhost'
 PORT = 5000
 REDIRECT_URI = "{}:{}/callback".format(CLIENT_SIDE_URL, PORT)
-SCOPE = 'playlist-modify-private user-top-read'
+SCOPE = 'playlist-modify-private user-top-read playlist-modify-public'
 STATE = ''
 SHOW_DIALOG_bool = True
 SHOW_DIALOG_str = str(SHOW_DIALOG_bool).lower()
@@ -69,6 +69,10 @@ def callback():
     response_data = json.loads(post_request.text)
     access_token = response_data['access_token']
     refresh_token = response_data['refresh_token']
+    print("client_id: ")
+    print(CLIENT_ID)
+    print("access_token")
+    print(access_token)
 
     # Create response url
     res_query_parameters = {
@@ -105,8 +109,28 @@ def create_blend(limit, time_range, playlist_size):
         target_args = get_target_args(blend_seed['tracks'], 20, sp)
         recommendations = sp.recommendations(seed_artists=seed_artists, limit=playlist_size,
         **target_args)
-        print(recommendations)
-    return 'success'
+        readable_songs = get_readable_song_list(recommendations)
+        song_uris = get_song_uris(recommendations)
+        json_respone = jsonify({"songlist": readable_songs, "song_uris": song_uris})
+
+    return json_respone, 201
+
+#can add a new playlist to multiple user's libraries
+@app.route('/add_playlist/<playlist_name>', methods=['POST', 'GET'])
+def add_playlist(playlist_name):
+    if request.method == 'POST':
+        uris = ast.literal_eval(request.form["URI"])
+        print(uris)
+        print(type(uris))
+        for user in request.form:
+            if user != 'URI':
+                token = request.form[user]
+                sp = spotipy.Spotify(auth=token)
+                response = sp.user_playlist_create(user, playlist_name, public=True)
+                playlist_id = response["id"]
+                response = sp.user_playlist_add_tracks(user, playlist_id, uris, position=None)
+
+        return "successfully uploaded playlist", 201
 
 # Helper function -  orders IDs by weight
 def sort_by_weight(blend_seed_attributes):
@@ -115,6 +139,35 @@ def sort_by_weight(blend_seed_attributes):
 # Gets artists with the 5 highest weights
 def get_seed_artists(blend_seed_artists):
     return list(sort_by_weight(blend_seed_artists).keys())[:5]
+
+#will extract the song uris from the json response from the create_blend function
+def get_song_uris(json_respone):
+    uris = []
+    tracks = json_respone["tracks"]
+    for track in tracks:
+        uris += [track["uri"]]
+    return uris
+
+#will extract the song characteristics in a simple form
+#from the json response from the create_blend function
+def get_readable_song_list(json_response):
+    songs = []
+    tracks = json_response["tracks"]
+    for track in tracks:
+        #get album name
+        album_name = track['album']['name']
+        #get artists
+        artists = []
+        artistsInfo = track["artists"]
+        for artist in artistsInfo:
+            artists += artist["name"]
+        #get song name
+        song_name = track["name"]
+        #get album art
+        album_art_urls = track["album"]['images']
+        songInfo = {"song": song_name, "album" : album_name, "artist": artists[0], "album_art_urls": album_art_urls}
+        songs += [songInfo]
+    return(songs)
 
 # Creates target audio characteristics for the top N songs
 def get_target_args(blend_seed_tracks, n, sp):
@@ -128,3 +181,6 @@ def get_target_args(blend_seed_tracks, n, sp):
         'target_valence': str(np.mean([i['valence'] for i in top_tracks_features]))
     }
     return target_args
+
+if __name__ == '__main__':
+    app.run()
