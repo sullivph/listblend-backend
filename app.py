@@ -69,10 +69,6 @@ def callback():
     response_data = json.loads(post_request.text)
     access_token = response_data['access_token']
     refresh_token = response_data['refresh_token']
-    print("client_id: ")
-    print(CLIENT_ID)
-    print("access_token")
-    print(access_token)
 
     # Create response url
     res_query_parameters = {
