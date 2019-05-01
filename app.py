@@ -1,5 +1,6 @@
 import json
 from flask import Flask, request, redirect, jsonify
+from flask_cors import CORS, cross_origin
 import requests
 import base64
 import urllib.parse
@@ -9,6 +10,8 @@ import numpy as np
 import ast
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 # Client Keys
 CLIENT_ID = '1f6397c5617841b9a104f750bd309a37'
 CLIENT_SECRET = '442fd02c347a41e19477ce4908712f2f'
@@ -157,15 +160,16 @@ def get_readable_song_list(json_response):
         #get album name
         album_name = track['album']['name']
         #get artists
-        artists = []
-        artistsInfo = track["artists"]
-        for artist in artistsInfo:
-            artists += artist["name"]
+        artists = ''
+        for i in range(0, len(track["artists"])):
+            if i != 0:
+                artists += ', '
+            artists += track["artists"][i]['name']
         #get song name
         song_name = track["name"]
         #get album art
         album_art_urls = track["album"]['images']
-        songInfo = {"song": song_name, "album" : album_name, "artist": artists[0], "album_art_urls": album_art_urls}
+        songInfo = {"song": song_name, "album" : album_name, "artist": artists, "album_art_urls": album_art_urls}
         songs += [songInfo]
     return(songs)
 
