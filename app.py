@@ -20,7 +20,6 @@ SPOTIFY_API_BASE_URL = 'https://api.spotify.com'
 API_VERSION = 'v1'
 SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 
-
 # Server-side Parameters
 CLIENT_SIDE_URL = 'http://localhost'
 PORT = 5000
@@ -51,7 +50,6 @@ def login():
     auth_url = '{}/?{}'.format(SPOTIFY_AUTH_URL, url_args)
     return redirect(auth_url)
 
-
 @app.route('/callback')
 def callback():
     # Request refresh and access token
@@ -77,9 +75,7 @@ def callback():
     }
     url_args = '&'.join(['{}={}'.format(key,urllib.parse.quote(val)) for key,val in res_query_parameters.items()])
     res_url = '{}/#{}'.format(CLIENT_SIDE_URL + ':3000', url_args)
-
     return redirect(res_url)
-
 
 @app.route('/create_blend/<limit>/<time_range>/<playlist_size>', methods=['POST', 'GET'])
 def create_blend(limit, time_range, playlist_size):
@@ -108,7 +104,6 @@ def create_blend(limit, time_range, playlist_size):
         readable_songs = get_readable_song_list(recommendations)
         song_uris = get_song_uris(recommendations)
         json_respone = jsonify({"songlist": readable_songs, "song_uris": song_uris})
-
     return json_respone, 201
 
 #can add a new playlist to multiple user's libraries
@@ -116,8 +111,6 @@ def create_blend(limit, time_range, playlist_size):
 def add_playlist(playlist_name):
     if request.method == 'POST':
         uris = ast.literal_eval(request.form["URI"])
-        print(uris)
-        print(type(uris))
         for user in request.form:
             if user != 'URI':
                 token = request.form[user]
@@ -125,7 +118,6 @@ def add_playlist(playlist_name):
                 response = sp.user_playlist_create(user, playlist_name, public=True)
                 playlist_id = response["id"]
                 response = sp.user_playlist_add_tracks(user, playlist_id, uris, position=None)
-
         return "successfully uploaded playlist", 201
 
 # Helper function -  orders IDs by weight
@@ -177,6 +169,3 @@ def get_target_args(blend_seed_tracks, n, sp):
         'target_valence': str(np.mean([i['valence'] for i in top_tracks_features]))
     }
     return target_args
-
-if __name__ == '__main__':
-    app.run()
