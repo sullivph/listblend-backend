@@ -12,9 +12,9 @@ import ast
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
-# Client Keys
-CLIENT_ID = '1f6397c5617841b9a104f750bd309a37'
-CLIENT_SECRET = '442fd02c347a41e19477ce4908712f2f'
+# Client Keys (obtained through Spotify API app registration)
+CLIENT_ID = 'Replace Me'
+CLIENT_SECRET = 'Replace Me'
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize'
@@ -42,9 +42,6 @@ auth_query_parameters = {
     'show_dialog': SHOW_DIALOG_str,
     'client_id': CLIENT_ID
 }
-
-def get_user_auth_header(access_token):
-    return {"Authorization":"Bearer {}".format(access_token)}
 
 @app.route('/login')
 def login():
